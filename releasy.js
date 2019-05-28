@@ -58,17 +58,26 @@ class Releasy {
                 if (release != refRelease) {
                     if (release.start.getTime() <= refRelease.end.getTime()
                             && release.start.getTime() >= refRelease.start.getTime()) {
-                        
                         release.hindex += 1;
-                    }
-
-                    if (release.start.getTime() == refRelease.start.getTime()
-                        && release.hindex == refRelease.hindex) {
-                        console.log(release.name)
-                            release.hindex -= 1;
                     }
                 }
             }    
+        }
+
+        let fix = true;
+        while(fix) {
+            fix = false;
+            for (const release of this.releases) {
+                for (const refRelease of this.releases) {
+                    if (release != refRelease) {
+                        while(release.start.getTime() == refRelease.start.getTime()
+                                && release.hindex == refRelease.hindex) {
+                            release.hindex -= 1;
+                            fix = true;
+                        }
+                    }
+                }    
+            }
         }
 
         let r = new RelGraph('#chart', this.releases);
