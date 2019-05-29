@@ -4,6 +4,12 @@ g.release.data rect {
     stroke: #000;
 }
 
+g.release.data text {
+    display: none;
+    font-size:  8pt;
+
+}
+
 .zoom {
     fill: none;
     pointer-events: all;

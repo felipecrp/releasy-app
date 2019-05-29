@@ -1,33 +1,39 @@
 
 class Releasy {
-    constructor(releases) {
-        this.releases = releases
+    constructor(releases, div) {
+        this.div = d3.select(div);
+        this.releases = releases//.slice(0,10)
+        this.releases.sort((r1,r2) => r1.end.getTime() - r2.end.getTime())
+        console.log(this.releases[0].name)
     }
 
     init() {
-        this.releases = this.releases//.slice(0,10)
         let maxHIndex = 0;
         for (let i=0; i < this.releases.length; i++) {
             const release = this.releases[i];
             release.hindex = 0;
             release.hchurn = 0;
-            for (let j=0; j < this.releases.length; j++) {
-                const refRelease = this.releases[j];
-                if (i > j) {
-                    if (release.start.getTime() <= refRelease.end.getTime()
-                            && release.hindex == refRelease.hindex) {
-                        release.hindex += 1    
+            let conv = true;
+            while (conv) {
+                conv = false;
+                for (let j=0; j < this.releases.length; j++) {
+                    const refRelease = this.releases[j];
+                    if (i > j) {
+                        if (release.start.getTime() <= refRelease.end.getTime()
+                                && release.hindex == refRelease.hindex) {
+                            release.hindex += 1    
+                            conv = true
+                        }
                     }
                 }
             }
-
             // if (release.hindex > maxHIndex) {
             //     release.hindex = maxHIndex+1;
             //     maxHIndex += 1;
             // }
         }
 
-        let r = new RelGraph('#chart', this.releases);
+        let r = new RelGraph(this.div, this.releases);
         r.draw();
     }
 }
@@ -36,7 +42,7 @@ class RelGraph {
     
     constructor(div, releases) {
         this.releases = releases;
-        this.svg = d3.select(div).append("svg");
+        this.svg = div.append("svg");
         this.releaseGrpBnd = this.svg.append('g')
             .classed('release', true)
             .classed('data', true);
@@ -66,7 +72,7 @@ class RelGraph {
 
         if (width == 0) { width = 300; }
         if (height == 0) { height = 600; }
-        height = 2000;
+        height = 300;
 
         return { width: width, height: height }
     }
@@ -102,6 +108,17 @@ class RelGraph {
         releasesBnd.merge(newReleasesBnd)
             .attr('x', (data) => this.xZScale(data.start))
             .attr('width', (data) => this.xZScale(data.end) - this.xZScale(data.start))
+
+        let labelsBnds = this.releaseGrpBnd.selectAll('text').data(this.releases);
+        let newLabelsBnds = labelsBnds.enter()
+            .append('text')
+                .attr('y', (release) => 40 + 30*release.hindex)
+                .attr('height', 25)
+                .attr('data', (release) => release.name)
+                .text((release) => release.name)
+        labelsBnds.merge(newLabelsBnds)
+            .attr('x', (data) => this.xZScale(data.start) + 5)
+            .attr('width', (data) => this.xZScale(data.end) - this.xZScale(data.start))
     }
 
     zoomed() {
@@ -120,7 +137,17 @@ d3.json("data_ansible.json").then(function(data) {
         release.start = new Date(release.start);
         release.end = new Date(release.end);
     }
-    r = new Releasy(releases);
+    r = new Releasy(releases, "#ansible");
+    r.init();
+});
+
+d3.json("data_brew.json").then(function(data) {
+    let releases = data;
+    for (let release of releases) {
+        release.start = new Date(release.start);
+        release.end = new Date(release.end);
+    }
+    r = new Releasy(releases, "#brew");
     r.init();
 });
 
