@@ -1,87 +1,34 @@
 
-let releases = [
-    { 
-        name: '1.0.1',
-        start: new Date(2019,0,1),
-        end: new Date(2019,0,5),
-        churn: 400
-    },
-    { 
-        name: '1.0.2',
-        start: new Date(2019,0,6),
-        end: new Date(2019,0,7),        
-        churn: 200
-    },
-    { 
-        name: '1.1.0',
-        start: new Date(2019,0,12),
-        end: new Date(2019,0,15),
-        churn: 100
-    },
-    { 
-        name: '1.1.1',
-        start: new Date(2019,0,9),
-        end: new Date(2019,1,5),
-        churn: 150
-    },
-    { 
-        name: '1.1.2',
-        start: new Date(2019,0,9),
-        end: new Date(2019,1,5),
-        churn: 300
-    },
-    { 
-        name: '1.1.3',
-        // start: new Date(2019,0,15),
-        // end: new Date(2019,0,25),
-        start: new Date(2019,0,9),
-        end: new Date(2019,1,5),
-        churn: 500
-    },
-    { 
-        name: '1.2.0',
-        start: new Date(2019,1,1),
-        end: new Date(2019,1,15),
-        churn: 100
-    }
-]
-
 class Releasy {
     constructor(releases) {
         this.releases = releases
     }
 
     init() {
-        for (const release of this.releases) {
+        this.releases = this.releases//.slice(0,10)
+        let maxHIndex = 0;
+        for (let i=0; i < this.releases.length; i++) {
+            const release = this.releases[i];
             release.hindex = 0;
-            for (const refRelease of this.releases) {
-                if (release != refRelease) {
+            release.hchurn = 0;
+            for (let j=0; j < this.releases.length; j++) {
+                const refRelease = this.releases[j];
+                if (i > j) {
                     if (release.start.getTime() <= refRelease.end.getTime()
-                            && release.start.getTime() >= refRelease.start.getTime()) {
-                        release.hindex += 1;
+                            && release.hindex == refRelease.hindex) {
+                        release.hindex += 1    
                     }
                 }
-            }    
-        }
-
-        let fix = true;
-        while(fix) {
-            fix = false;
-            for (const release of this.releases) {
-                for (const refRelease of this.releases) {
-                    if (release != refRelease) {
-                        while(release.start.getTime() == refRelease.start.getTime()
-                                && release.hindex == refRelease.hindex) {
-                            release.hindex -= 1;
-                            fix = true;
-                        }
-                    }
-                }    
             }
+
+            // if (release.hindex > maxHIndex) {
+            //     release.hindex = maxHIndex+1;
+            //     maxHIndex += 1;
+            // }
         }
 
         let r = new RelGraph('#chart', this.releases);
-        r.draw()
+        r.draw();
     }
 }
 
@@ -90,42 +37,91 @@ class RelGraph {
     constructor(div, releases) {
         this.releases = releases;
         this.svg = d3.select(div).append("svg");
+        this.releaseGrpBnd = this.svg.append('g')
+            .classed('release', true)
+            .classed('data', true);
+
+        let size = this.size();
+        
+        this.xAxisGroup = this.svg
+            .append("g")
+
+        let zoom = d3.zoom()
+            .extent([[0, 0], [size.width, 25]])
+            .on("zoom", this.zoomed.bind(this))
+        
+        this.svg
+            .append("rect")
+            .attr("class", "zoom")
+            .attr("width", size.width)
+            .attr("height", 500)
+            .call(zoom);
     }
 
-    draw() {
+
+    size() {
         let parent = this.svg.node().parentNode;
         let width = parent.clientWidth;
         let height = parent.clientHeight;
 
         if (width == 0) { width = 300; }
-        if (height == 0) { height = 500; }
-        height = 500;
+        if (height == 0) { height = 600; }
+        height = 2000;
+
+        return { width: width, height: height }
+    }
+
+    draw() {
+        let size = this.size();
+        
         this.svg
-            .attr("width", width)
-            .attr("height", height);
+            .attr("width", size.width)
+            .attr("height", size.height);
 
-        let xScale = d3.scaleTime()
-            .domain([releases[0].start, releases[releases.length-1].end])
-            .range([0, width-1]);
+        this.xScale = d3.scaleTime()
+            .domain([this.releases[0].start, this.releases[this.releases.length-1].end])
+            .range([0, size.width-1]);
+
+        if (this.xZScale === undefined) { this.xZScale = this.xScale; }
         
-        let xAxisGroup = this.svg
-            .append("g")
-
-        let xAxis = d3.axisBottom()
-            .scale(xScale);
+        this.xAxis = d3.axisBottom()
+            .scale(this.xZScale);
+        this.xAxisGroup.call(this.xAxis);
         
-        xAxisGroup.call(xAxis);
+        let churnScale = d3.scaleLinear()
+            .domain([0, 500]) // d3.max(this.releases, (release) => release.churn)])
+            .range([0, 100]);
 
-        this.svg.selectAll('rect').data(this.releases).enter()
+        let releasesBnd = this.releaseGrpBnd.selectAll('rect.bar').data(this.releases);
+        let newReleasesBnd = releasesBnd.enter()
             .append('rect')
                 .classed('bar', true)
-                .attr('x', (data) => xScale(data.start))
-                .attr('y', (data) => 50 + 30*data.hindex)
-                .attr('width', (data) => xScale(data.end) - xScale(data.start))
+                .attr('y', (release) => 20 + 30*release.hindex)
                 .attr('height', 25)
+                .attr('data', (release) => release.name)
+        releasesBnd.merge(newReleasesBnd)
+            .attr('x', (data) => this.xZScale(data.start))
+            .attr('width', (data) => this.xZScale(data.end) - this.xZScale(data.start))
+    }
+
+    zoomed() {
+        let t = d3.event.transform;
+        this.xZScale = t.rescaleX(this.xScale);
+        // this.xAxis.scale(this.xZScale);
+        // this.xAxisGroup.call(this.xZScale);
+        console.log(t);
+        this.draw();
     }
 }
 
-r = new Releasy(releases);
-r.init();
+d3.json("data_ansible.json").then(function(data) {
+    let releases = data;
+    for (let release of releases) {
+        release.start = new Date(release.start);
+        release.end = new Date(release.end);
+    }
+    r = new Releasy(releases);
+    r.init();
+});
+
 

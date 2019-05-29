@@ -1,4 +1,10 @@
 
-#rel_chart {
-    
+g.release.data rect {
+    fill: none;
+    stroke: #000;
+}
+
+.zoom {
+    fill: none;
+    pointer-events: all;
 }
