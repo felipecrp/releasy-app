@@ -4,6 +4,17 @@ g.release.data rect {
     stroke: #000;
 }
 
+g.release.data rect.PATCH {
+}
+
+g.release.data rect.MINOR {
+    fill: green;
+}
+
+g.release.data rect.MAJOR {
+    fill: blue;
+}
+
 g.release.data text {
     display: none;
     font-size:  8pt;

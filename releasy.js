@@ -72,7 +72,7 @@ class RelGraph {
 
         if (width == 0) { width = 300; }
         if (height == 0) { height = 600; }
-        height = 300;
+        height = 500;
 
         return { width: width, height: height }
     }
@@ -101,6 +101,7 @@ class RelGraph {
         let releasesBnd = this.releaseGrpBnd.selectAll('rect.bar').data(this.releases);
         let newReleasesBnd = releasesBnd.enter()
             .append('rect')
+                .attr('class', (release) => release.type)
                 .classed('bar', true)
                 .attr('y', (release) => 20 + 30*release.hindex)
                 .attr('height', 25)
@@ -148,6 +149,16 @@ d3.json("data_brew.json").then(function(data) {
         release.end = new Date(release.end);
     }
     r = new Releasy(releases, "#brew");
+    r.init();
+});
+
+d3.json("data_electron.json").then(function(data) {
+    let releases = data;
+    for (let release of releases) {
+        release.start = new Date(release.start);
+        release.end = new Date(release.end);
+    }
+    r = new Releasy(releases, "#electron");
     r.init();
 });
 
