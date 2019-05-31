@@ -25,3 +25,13 @@ g.release.data text {
     fill: none;
     pointer-events: all;
 }
+
+path.start {
+    fill: none;
+    stroke: blue;
+}
+
+path.end {
+    fill: none;
+    stroke: red;
+}

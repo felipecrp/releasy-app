@@ -27,14 +27,83 @@ class Releasy {
                     }
                 }
             }
-            // if (release.hindex > maxHIndex) {
-            //     release.hindex = maxHIndex+1;
-            //     maxHIndex += 1;
-            // }
         }
 
-        let r = new RelGraph(this.div, this.releases);
-        r.draw();
+        let relCfd = this.div.append('div');
+        let relGraph = this.div.append('div');
+
+        let graph = new RelGraph(relGraph, this.releases);
+        graph.draw();
+
+        let cfd = new RelCfd(relCfd, this.releases);
+    }
+}
+
+class RelCfd {
+    constructor(div, releases) {
+        this.releases = releases;
+        this.svg = div.append('svg');
+
+        let parent = this.svg.node().parentNode;
+        let width = parent.clientWidth;
+        let height = parent.clientHeight;
+
+        if (width == 0) { width = 300; }
+        if (height == 0) { height = 600; }
+        height = 200;
+
+        let size = { width: width, height: height };
+        this.svg
+            .attr('width', width)
+            .attr('height', height)
+
+        this.endSerie = [];
+        let churn = 0;
+        this.releases = this.releases.sort((r1,r2) => r1.end.getTime() - r2.end.getTime());
+        for (let i=0; i < releases.length; i++) {
+            let release = releases[i];
+            churn += release.churn;
+            this.endSerie.push({ time: release.end, churn: churn })
+        }
+            
+        this.startSerie = [];
+        churn = 0 
+        this.releases = this.releases.sort((r1,r2) => r1.start.getTime() - r2.start.getTime());
+        for (let i=0; i < releases.length; i++) {
+            let release = releases[i];
+            churn += release.churn;
+            this.startSerie.push({ time: release.start, churn: churn })
+        }
+        
+        this.yScale = d3.scaleLinear()
+            .domain([0, churn])
+            .range([size.height, 0]);
+
+        this.xScale = d3.scaleTime()
+            .domain([this.releases[0].start, this.releases[this.releases.length-1].end])
+            .range([0, size.width-1]);
+
+        this.line = d3.line()
+            .x((d) => this.xScale(d.time)) 
+            .y((d) => this.yScale(d.churn))
+            .curve(d3.curveMonotoneX)
+
+        this.draw();
+    }
+
+    draw() {
+        let lnStart = this.svg.append("path")
+            .datum(this.startSerie)
+            .attr("class", "line")
+            .attr("d", this.line)
+            .attr("class", 'start');
+
+
+        let lnEnd = this.svg.append("path")
+            .datum(this.endSerie)
+            .attr("class", "line")
+            .attr("d", this.line)
+            .attr("class", 'end');
     }
 }
 
