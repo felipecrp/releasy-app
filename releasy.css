@@ -16,9 +16,14 @@ g.release.data rect.MAJOR {
 }
 
 g.release.data text {
-    display: none;
+    /* display: none; */
     font-size:  8pt;
 
+}
+
+g.patches.data rect {
+    fill: gray;
+    stroke: #000;
 }
 
 .zoom {
@@ -34,4 +39,8 @@ path.start {
 path.end {
     fill: none;
     stroke: red;
+}
+
+line {
+    stroke: gray;
 }
