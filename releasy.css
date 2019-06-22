@@ -1,4 +1,35 @@
 
+.releasy .gantt {
+    height: 285px;
+}
+
+.releasy .gantt .grid line {
+    stroke: #ddd;
+    stroke-width: 1px;
+}
+
+.releasy .gantt .featureRls rect {
+    fill: #99d8c9; 
+}
+
+.releasy .gantt .featureRls rect.major {
+    fill: #d8b365; 
+}
+
+.releasy .gantt .patchRls rect {
+    stroke: #99d8c9; 
+    /* stroke-width: 2px;  */
+    fill: #2ca25f;
+}
+
+.releasy .gantt .featureRls text {
+    font-size: 12px;
+    text-anchor: start;
+}
+
+
+
+
 g.release.data rect {
     fill: none;
     stroke: #000;
