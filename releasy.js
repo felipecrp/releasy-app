@@ -58,7 +58,11 @@ class Releasy {
             }
         }
 
-        let gantt = new ReleasyGantt(div.append('div'), featureRls);
+        let ganttDiv = div.append('div');
+        let detailDiv = div.append('div');
+
+        let rDetail = new ReleasyDetail(detailDiv);
+        let rGantt = new ReleasyGantt(ganttDiv, featureRls, [rDetail]);
     }
 }
 
@@ -68,7 +72,6 @@ class Releasy {
 class ReleasyChart {
 
     constructor(div) {
-        div.attr('class', 'gantt');
         this.svg = div.append("svg");
     }
 
@@ -95,9 +98,11 @@ class ReleasyChart {
 }
 
 class ReleasyGantt extends ReleasyChart {
-    constructor(div, featureRls) {
+    constructor(div, featureRls, events) {
         super(div);
+        div.attr('class', 'gantt');
         this.featureRls = featureRls;
+        this.events = events;
         let size = this.size();
 
         this.featureRlsGrp = this.svg.append('g')
@@ -114,7 +119,7 @@ class ReleasyGantt extends ReleasyChart {
             .attr('transform','translate(0,20)');
         this.xScale = d3.scaleTime()
             .domain([this.featureRls[0].start, this.featureRls[this.featureRls.length-1].end])
-            .range([50, size.width-1]);
+            .range([50, size.width-20]);
         this.xZScale = this.xScale;
 
         this.yScale = d3.scaleLinear()
@@ -168,7 +173,9 @@ class ReleasyGantt extends ReleasyChart {
         let newFeatureRlsBnd = featureRlsBnd.enter().append('rect')
             .attr('height', 20)
             .classed('major', (rls) => rls.type == 'MAJOR')
-            .classed('minor', (rls) => rls.type == 'MINOR');
+            .classed('minor', (rls) => rls.type == 'MINOR')
+            .on('click', select)
+
         featureRlsBnd.merge(newFeatureRlsBnd)
             .attr('x', (rls) => this.xZScale(rls.start))
             .attr('y', (rls) => this.yZScale(0) + 25*rls.pIndex)
@@ -191,6 +198,16 @@ class ReleasyGantt extends ReleasyChart {
             .attr('x', (rls) => this.xZScale(rls.maintenance.start))
             .attr('y', (rls) => this.yZScale(0) + 5 + 25*rls.pIndex)
             .attr('width', (rls) => this.xZScale(rls.maintenance.end) - this.xZScale(rls.maintenance.start));
+
+        let self = this;
+        function select(rls) {
+            let a = self.featureRlsGrp.select('rect');
+            self.featureRlsGrp.selectAll('rect').classed('selected', false);
+            d3.select(this).classed('selected', true);
+            for (event of self.events) {
+                event.update(rls);    
+            }
+        }
     }
 
     xZoom() {
@@ -202,237 +219,92 @@ class ReleasyGantt extends ReleasyChart {
     yZoom() {
         let t = d3.event.transform;
         this.yZScale = t.rescaleY(this.yScale);
-        console.log(t)
         this.draw();
     }
 }
 
-class RelTimeLine {
-    constructor(div, releases) {
-        this.releases = releases;
-        this.svg = div.append("svg");
-        this.releaseGrpBnd = this.svg.append('g')
-            .classed('release', true)
-            .classed('data', true)
-            .attr('transform', 'translate(0,25)');
+class ReleasyDetail extends ReleasyChart {
+    constructor(div, featureRl, rDetail) {
+        super(div);
+        div.attr('class', 'detail');
+        this.rDetail = rDetail;
 
-        let size = this.size();
+        this.featureRlsGrp = this.svg.append('g')
+            .classed('featureRls', true)
+
+        this.patchRlsGrp = this.svg.append('g')
+            .classed('patchRls', true)
+
         
-        this.startAxisGroup = this.svg
-            .append('g')
-            .attr('transform', 'translate(0,225)')
-        this.endAxisGroup = this.svg
-            .append('g')
-            .attr('transform', 'translate(0,25)')
+        this.patchRlsTmGrp = this.svg.append('g')
+            .classed('patchRls', true)
+
+        // Axis
+        this.xAxisGrp = this.svg.append("g")
+            .attr('transform','translate(0,120)');
+        this.x2AxisGrp = this.svg.append("g")
+            .attr('transform','translate(0,220)');
     }
-
-    size() {
-        let parent = this.svg.node().parentNode;
-        let width = parent.clientWidth;
-        let height = parent.clientHeight;
-
-        if (width == 0) { width = 300; }
-        if (height == 0) { height = 600; }
-        height = 250;
-
-        return { width: width, height: height }
-    }
-
-    draw() {
-        let size = this.size();
-        
-        this.svg
-            .attr("width", size.width)
-            .attr("height", 200);
-
-        this.xScale = d3.scaleTime()
-            .domain([this.releases[0].start, this.releases[this.releases.length-1].end])
-            .range([0, size.width-1]);
-
-        if (this.xZScale === undefined) { this.xZScale = this.xScale; }
-        
-        let startAxis = d3.axisBottom()
-            .scale(this.xZScale);
-
-        let endAxis = d3.axisTop()
-            .scale(this.xZScale);
-        
-        this.startAxisGroup.call(startAxis);
-        this.endAxisGroup.call(endAxis);
-
-        let bind = this.releaseGrpBnd.selectAll('line').data(this.releases)
-
-        bind.enter()
-            .append('line')
-            .attr('x1', (data) => this.xZScale(data.start))
-            .attr('y1', 200)
-            .attr('x2', (data) => this.xZScale(data.end))
-            .attr('y2', 0);
-
-    }
-
-}
-
-
-class RelCfd {
-    constructor(div, releases) {
-        this.releases = releases;
-        this.svg = div.append('svg');
-
-        let parent = this.svg.node().parentNode;
-        let width = parent.clientWidth;
-        let height = parent.clientHeight;
-
-        if (width == 0) { width = 300; }
-        if (height == 0) { height = 600; }
-        height = 200;
-
-        let size = { width: width, height: height };
-        this.svg
-            .attr('width', width)
-            .attr('height', height)
-
-        this.endSerie = [];
-        let churn = 0;
-        this.releases = this.releases.sort((r1,r2) => r1.end.getTime() - r2.end.getTime());
-        for (let i=0; i < releases.length; i++) {
-            let release = releases[i];
-            churn += release.churn;
-            this.endSerie.push({ time: release.end, churn: churn })
-        }
-            
-        this.startSerie = [];
-        churn = 0 
-        this.releases = this.releases.sort((r1,r2) => r1.start.getTime() - r2.start.getTime());
-        for (let i=0; i < releases.length; i++) {
-            let release = releases[i];
-            churn += release.churn;
-            this.startSerie.push({ time: release.start, churn: churn })
-        }
-        
-        this.yScale = d3.scaleLinear()
-            .domain([0, churn])
-            .range([size.height, 0]);
-
-        this.xScale = d3.scaleTime()
-            .domain([this.releases[0].start, this.releases[this.releases.length-1].end])
-            .range([0, size.width-1]);
-
-        this.line = d3.line()
-            .x((d) => this.xScale(d.time)) 
-            .y((d) => this.yScale(d.churn))
-            .curve(d3.curveMonotoneX)
-
-        this.draw();
-    }
-
-    draw() {
-        let lnStart = this.svg.append("path")
-            .datum(this.startSerie)
-            .attr("class", "line")
-            .attr("d", this.line)
-            .attr("class", 'start');
-
-
-        let lnEnd = this.svg.append("path")
-            .datum(this.endSerie)
-            .attr("class", "line")
-            .attr("d", this.line)
-            .attr("class", 'end');
-    }
-}
-
-class RelGraphOld {
     
-    constructor(div, releases) {
-        this.releases = releases;
-        this.svg = div.append("svg");
-        this.releaseGrpBnd = this.svg.append('g')
-            .classed('release', true)
-            .classed('data', true);
+    update(rls) {
+        this.rls = rls;
+        let size = this.size()
 
-        let size = this.size();
-        
-        this.xAxisGroup = this.svg
-            .append("g")
+        let start = Math.min(rls.maintenance.start, rls.end);
+        this.xScale = d3.scaleTime()
+            .domain([start, this.rls.maintenance.end])
+            .range([50, size.width-20]);
+        this.xZScale = this.xScale;
 
-        let zoom = d3.zoom()
-            .extent([[0, 0], [size.width, 25]])
-            .on("zoom", this.zoomed.bind(this))
-        
-        this.svg
-            .append("rect")
-            .attr("class", "zoom")
-            .attr("width", size.width)
-            .attr("height", 500)
-            .call(zoom);
-    }
-
-
-    size() {
-        let parent = this.svg.node().parentNode;
-        let width = parent.clientWidth;
-        let height = parent.clientHeight;
-
-        if (width == 0) { width = 300; }
-        if (height == 0) { height = 600; }
-        height = 350;
-
-        return { width: width, height: height }
+        this.draw();
     }
 
     draw() {
-        let size = this.size();
-        
-        this.svg
-            .attr("width", size.width)
-            .attr("height", size.height);
+        let size = super.resize();
 
-        this.xScale = d3.scaleTime()
-            .domain([this.releases[0].start, this.releases[this.releases.length-1].end])
-            .range([0, size.width-1]);
+        this.xAxis = d3.axisTop().scale(this.xZScale);
+        this.xAxisGrp.call(this.xAxis);
 
-        if (this.xZScale === undefined) { this.xZScale = this.xScale; }
-        
-        this.xAxis = d3.axisBottom()
-            .scale(this.xZScale);
-        this.xAxisGroup.call(this.xAxis);
-        
-        let churnScale = d3.scaleLinear()
-            .domain([0, 500]) // d3.max(this.releases, (release) => release.churn)])
-            .range([0, 100]);
+        this.x2Axis = d3.axisBottom().scale(this.xZScale);
+        this.x2AxisGrp.call(this.x2Axis);
 
-        let releasesBnd = this.releaseGrpBnd.selectAll('rect.bar').data(this.releases);
-        let newReleasesBnd = releasesBnd.enter()
-            .append('rect')
-                .attr('class', (release) => release.type)
-                .classed('bar', true)
-                .attr('y', (release) => 20 + 20*release.hindex)
-                .attr('height', 15)
-                .attr('data', (release) => release.name)
-        releasesBnd.merge(newReleasesBnd)
-            .attr('x', (data) => this.xZScale(data.start))
-            .attr('width', (data) => this.xZScale(data.end) - this.xZScale(data.start))
+        let featureRlsBnd = this.featureRlsGrp.selectAll('circle').data([this.rls]);
+        let newFeatureRlsBnd = featureRlsBnd.enter().append('circle')
+            .attr('r', 10)
+            .attr('cy', 50)
+        featureRlsBnd.merge(newFeatureRlsBnd)
+            .attr('cx', rls => this.xZScale(rls.end))
+            .classed('major', (rls) => rls.type == 'MAJOR')
+            .classed('minor', (rls) => rls.type == 'MINOR')
 
-        let labelsBnds = this.releaseGrpBnd.selectAll('text').data(this.releases);
-        let newLabelsBnds = labelsBnds.enter()
-            .append('text')
-                .attr('y', (release) => 40 + 20*release.hindex)
-                .attr('height', 15)
-                .attr('data', (release) => release.name)
-                .text((release) => release.name)
-        labelsBnds.merge(newLabelsBnds)
-            .attr('x', (data) => this.xZScale(data.start) + 5)
-            .attr('width', (data) => this.xZScale(data.end) - this.xZScale(data.start))
-    }
+        let patchRlsBnd = this.patchRlsGrp.selectAll('circle').data(this.rls.patches);
+        let newPatchRlsBnd = patchRlsBnd.enter().append('circle')
+            .attr('r', 10)
+            .classed('patch', true);
+            patchRlsBnd.merge(newPatchRlsBnd)
+            .attr('cx', rls => this.xZScale(rls.end))
+            .attr('cy', 50)
+        patchRlsBnd.exit().remove();
 
-    zoomed() {
-        let t = d3.event.transform;
-        this.xZScale = t.rescaleX(this.xScale);
-        // this.xAxis.scale(this.xZScale);
-        // this.xAxisGroup.call(this.xZScale);
-        console.log(t);
-        this.draw();
+        let patchRlsTmBnd = this.patchRlsGrp.selectAll('line').data(this.rls.patches);
+        let newPatchRlsTmBnd = patchRlsTmBnd.enter().append('line')
+            .classed('patch', true);
+        patchRlsTmBnd.merge(newPatchRlsTmBnd)
+            .attr('x1', rls => this.xZScale(rls.end))
+            .attr('y1', 50)
+            .attr('x2', rls => this.xZScale(rls.end))
+            .attr('y2', 120)
+        patchRlsTmBnd.exit().remove();
+
+        let patchRlsTm2Bnd = this.patchRlsTmGrp.selectAll('line').data(this.rls.patches);
+        let newPatchRlsTm2Bnd = patchRlsTm2Bnd.enter().append('line')
+            .classed('patch', true);
+        patchRlsTm2Bnd.merge(newPatchRlsTm2Bnd)
+            .attr('x1', rls => this.xZScale(rls.end))
+            .attr('y1', 120)
+            .attr('x2', rls => this.xZScale(rls.start))
+            .attr('y2', 220)
+        patchRlsTm2Bnd.exit().remove();
     }
 }
 

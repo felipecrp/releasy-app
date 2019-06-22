@@ -1,6 +1,14 @@
 
 .releasy .gantt {
-    height: 285px;
+    height: 235px;
+}
+
+.releasy .detail {
+    height: 250px;
+}
+
+.releasy .patchTime {
+    height: 140px;
 }
 
 .releasy .gantt .grid line {
@@ -17,7 +25,7 @@
 }
 
 .releasy .gantt .patchRls rect {
-    stroke: #99d8c9; 
+    /* stroke: #99d8c9;  */
     /* stroke-width: 2px;  */
     fill: #2ca25f;
 }
@@ -27,51 +35,34 @@
     text-anchor: start;
 }
 
-
-
-
-g.release.data rect {
-    fill: none;
-    stroke: #000;
+.releasy .gantt .selected {
+    stroke: blueviolet;
+    stroke-width: 3px;
 }
 
-g.release.data rect.PATCH {
+.releasy .detail .featureRls circle {
+    fill: #99d8c9; 
 }
 
-g.release.data rect.MINOR {
-    fill: green;
+.releasy .detail .featureRls circle.major {
+    fill: #d8b365; 
 }
 
-g.release.data rect.MAJOR {
-    fill: blue;
+.releasy .detail .patchRls circle {
+    fill: #2ca25f; 
 }
 
-g.release.data text {
-    /* display: none; */
-    font-size:  8pt;
-
+.releasy .detail .patchRls line {
+    stroke: #2ca25f; 
+    stroke-width: 2px;
 }
 
-g.patches.data rect {
-    fill: gray;
-    stroke: #000;
+.releasy .patchTime .patchRls line {
+    stroke: #2ca25f; 
+    stroke-width: 2px;
 }
 
 .zoom {
     fill: none;
     pointer-events: all;
-}
-
-path.start {
-    fill: none;
-    stroke: blue;
-}
-
-path.end {
-    fill: none;
-    stroke: red;
-}
-
-line {
-    stroke: gray;
 }
