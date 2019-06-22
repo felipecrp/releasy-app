@@ -256,7 +256,13 @@ class ReleasyDetail extends ReleasyChart {
             .range([50, size.width-20]);
         this.xZScale = this.xScale;
 
-        this.draw();
+        let nodes = Array.from(rls.patches);
+        nodes.push(rls);
+        var simulation = d3.forceSimulation(nodes)
+            .force('x', d3.forceX().x(rls => this.xZScale(rls.end)).strength(0.9))
+            .force('y', d3.forceY().y(50).strength(0.8))
+            .force('collision', d3.forceCollide().radius(25).strength(0.4))
+            .on('tick', this.draw.bind(this));
     }
 
     draw() {
@@ -268,34 +274,67 @@ class ReleasyDetail extends ReleasyChart {
         this.x2Axis = d3.axisBottom().scale(this.xZScale);
         this.x2AxisGrp.call(this.x2Axis);
 
-        let featureRlsBnd = this.featureRlsGrp.selectAll('circle').data([this.rls]);
-        let newFeatureRlsBnd = featureRlsBnd.enter().append('circle')
-            .attr('r', 10)
-            .attr('cy', 50)
-        featureRlsBnd.merge(newFeatureRlsBnd)
-            .attr('cx', rls => this.xZScale(rls.end))
+
+        let featureRlsTmBnd = this.featureRlsGrp.selectAll('line').data([this.rls]);
+        let newFeatureRlsTmBnd = featureRlsTmBnd.enter().append('line')
+        featureRlsTmBnd.merge(newFeatureRlsTmBnd)
             .classed('major', (rls) => rls.type == 'MAJOR')
             .classed('minor', (rls) => rls.type == 'MINOR')
-
-        let patchRlsBnd = this.patchRlsGrp.selectAll('circle').data(this.rls.patches);
-        let newPatchRlsBnd = patchRlsBnd.enter().append('circle')
-            .attr('r', 10)
-            .classed('patch', true);
-            patchRlsBnd.merge(newPatchRlsBnd)
-            .attr('cx', rls => this.xZScale(rls.end))
-            .attr('cy', 50)
-        patchRlsBnd.exit().remove();
+            .attr('x1', rls => rls.x)
+            .attr('y1', rls => rls.y)
+            .attr('x2', rls => this.xZScale(rls.end))
+            .attr('y2', 120)
+        featureRlsTmBnd.exit().remove();
 
         let patchRlsTmBnd = this.patchRlsGrp.selectAll('line').data(this.rls.patches);
         let newPatchRlsTmBnd = patchRlsTmBnd.enter().append('line')
             .classed('patch', true);
         patchRlsTmBnd.merge(newPatchRlsTmBnd)
-            .attr('x1', rls => this.xZScale(rls.end))
-            .attr('y1', 50)
+            .attr('x1', rls => rls.x)
+            .attr('y1', rls => rls.y)
             .attr('x2', rls => this.xZScale(rls.end))
             .attr('y2', 120)
         patchRlsTmBnd.exit().remove();
 
+        // feature releases
+        let featureRlsBnd = this.featureRlsGrp.selectAll('circle').data([this.rls]);
+        let newFeatureRlsBnd = featureRlsBnd.enter().append('circle')
+            .attr('r', 20)
+        featureRlsBnd.merge(newFeatureRlsBnd)
+            .attr('cx', rls => rls.x)
+            .attr('cy', rls => rls.y)
+            .classed('major', (rls) => rls.type == 'MAJOR')
+            .classed('minor', (rls) => rls.type == 'MINOR')
+        
+        let featureRlsTxtBnd = this.featureRlsGrp.selectAll('text').data([this.rls]);
+        let newFeatureRlsTxtBnd = featureRlsTxtBnd.enter().append('text')
+            .attr('alignment-baseline', 'middle')
+        featureRlsTxtBnd.merge(newFeatureRlsTxtBnd)
+            .text(rls => rls.name)
+            .attr('x', rls => rls.x)
+            .attr('y', rls => rls.y)
+        featureRlsTxtBnd.exit().remove();
+
+        // patches
+        let patchRlsBnd = this.patchRlsGrp.selectAll('circle').data(this.rls.patches);
+        let newPatchRlsBnd = patchRlsBnd.enter().append('circle')
+            .attr('r', 20)
+            .classed('patch', true);
+        patchRlsBnd.merge(newPatchRlsBnd)
+            .attr('cx', rls => rls.x)
+            .attr('cy', rls => rls.y)
+        patchRlsBnd.exit().remove();
+
+        let patchRlsTxtBnd = this.patchRlsGrp.selectAll('text').data(this.rls.patches);
+        let newpatchRlsTxtBnd = patchRlsTxtBnd.enter().append('text')
+            .attr('alignment-baseline', 'middle')
+        patchRlsTxtBnd.merge(newpatchRlsTxtBnd)
+            .text(rls => rls.name)
+            .attr('x', rls => rls.x)
+            .attr('y', rls => rls.y)
+        patchRlsTxtBnd.exit().remove();
+        
+        // timeline
         let patchRlsTm2Bnd = this.patchRlsTmGrp.selectAll('line').data(this.rls.patches);
         let newPatchRlsTm2Bnd = patchRlsTm2Bnd.enter().append('line')
             .classed('patch', true);

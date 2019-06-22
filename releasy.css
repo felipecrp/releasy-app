@@ -57,9 +57,18 @@
     stroke-width: 2px;
 }
 
-.releasy .patchTime .patchRls line {
-    stroke: #2ca25f; 
+.releasy .detail .featureRls line {
+    stroke: #99d8c9; 
     stroke-width: 2px;
+}
+
+.releasy .detail .featureRls line.major {
+    stroke: #d8b365; 
+}
+
+.releasy .detail .featureRls text, .releasy .detail .patchRls text {
+    font-size: 12px;
+    text-anchor: middle;
 }
 
 .zoom {
