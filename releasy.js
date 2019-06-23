@@ -119,7 +119,7 @@ class ReleasyGantt extends ReleasyChart {
             .attr('transform','translate(0,20)');
         this.xScale = d3.scaleTime()
             .domain([this.featureRls[0].start, this.featureRls[this.featureRls.length-1].end])
-            .range([50, size.width-20]);
+            .range([50, size.width-50]);
         this.xZScale = this.xScale;
 
         this.yScale = d3.scaleLinear()
@@ -253,14 +253,14 @@ class ReleasyDetail extends ReleasyChart {
         let start = Math.min(rls.maintenance.start, rls.end);
         this.xScale = d3.scaleTime()
             .domain([start, this.rls.maintenance.end])
-            .range([50, size.width-20]);
+            .range([50, size.width-50]);
         this.xZScale = this.xScale;
 
         let nodes = Array.from(rls.patches);
         nodes.push(rls);
         var simulation = d3.forceSimulation(nodes)
-            .force('x', d3.forceX().x(rls => this.xZScale(rls.end)).strength(0.9))
-            .force('y', d3.forceY().y(50).strength(0.8))
+            .force('x', d3.forceX().x(rls => this.xZScale(rls.end)).strength(0.5))
+            .force('y', d3.forceY().y(50).strength(1))
             .force('collision', d3.forceCollide().radius(25).strength(0.4))
             .on('tick', this.draw.bind(this));
     }
